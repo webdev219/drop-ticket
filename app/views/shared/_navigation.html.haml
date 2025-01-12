@@ -5,9 +5,9 @@
     .w-full.block.flex-grow.lg:flex.lg:items-center.lg:w-auto
       .lg:flex-grow
         = link_to 'Home', '/', class: 'block mt-0 lg:inline-block text-gray-400 hover:text-gray-500 cursor-pointer mr-4'
-        = link_to 'Features', '#', class: 'block mt-0 lg:inline-block text-gray-400 hover:text-gray-500 cursor-pointer mr-4'
-        = link_to 'Pricing', '#', class: 'block mt-0 lg:inline-block text-gray-400 hover:text-gray-500 cursor-pointer mr-4'
-        = link_to 'Disabled', '#', class: 'block mt-0 lg:inline-block text-gray-300 cursor-default mr-4'
+        = link_to 'About', about_path, class: 'block mt-0 lg:inline-block text-gray-400 hover:text-gray-500 cursor-pointer mr-4'
+        = link_to 'Contact', contact_path, class: 'block mt-0 lg:inline-block text-gray-400 hover:text-gray-500 cursor-pointer mr-4'
+        = link_to 'Help', help_path, class: 'block mt-0 lg:inline-block text-gray-400 cursor-pointer mr-4'
     .block.lg:inline-block.leading-none.lg:pl-20.mt-3.lg:mt-0
       - if user_signed_in?
         .flex.items-center.justify-between.flex-wrap.flex-grow.flex-col.lg:flex-row.w-100

@@ -4,16 +4,22 @@ class DiscordBotService
   BOT_TOKEN = Rails.application.credentials.config[:discord][:token]
   CLIENT_ID = Rails.application.credentials.config[:discord][:client_id]
   CHANNEL_ID = 1328014476993368213
+  USER_ID=1312259562384003092
+
   def self.run
-    bot = Discordrb::Bot.new token: BOT_TOKEN, client_id: CLIENT_ID
+    bot = Discordrb::Commands::CommandBot.new token: BOT_TOKEN, prefix: '!'
+    bot.command(:exit, help_available: false) do |event|
+      break unless event.user.id == USER_ID
 
-    bot.ready do
-      puts 'Bot is online and ready!'
+      bot.send_message(event.channel.id, 'Bot is shutting down')
+      exit
     end
 
-    bot.message(with_text: '!ping') do |event|
-      event.respond 'Pong!'
+    bot.command(:reload, help_available: true) do |event|
+      bot.send_message(event.channel.id, 'Reloading all tickets')
     end
+
+    bot.send_message(CHANNEL_ID, 'Started bot!')
 
     bot.run
   end

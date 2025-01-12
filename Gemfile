@@ -40,3 +40,4 @@ end
 gem "devise", "~> 4.9"
 gem "haml", "~> 6.3"
 gem "discordrb"
+gem "faraday", "~> 2.12"

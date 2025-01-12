@@ -15,8 +15,27 @@ class DiscordBotService
       exit
     end
 
-    bot.command(:reload, help_available: true) do |event|
-      bot.send_message(event.channel.id, 'Reloading all tickets')
+    bot.command(:hi, help_available: true) do |event|
+      bot.send_message(event.channel.id, 'Hi, I am a bot for getting all tickets')
+    end
+
+    bot.command(:test, help_available: true) do |event|
+      bot.send_message(event.channel.id, 'I am ready to getting all tickets.')
+    end
+
+    bot.command(:events, help_available: true) do |event|
+      bot.send_message(event.channel.id, 'I am obtaining the event data from Ticketmaster through their API!!!')
+      events = TicketService.get_events
+      index = 0
+      loop do
+        break if index > events.count - 1
+
+        bot.send_message(event.channel.id, events[index])
+        bot.send_message(event.channel.id, '=' * 55)
+
+        index += 1
+        sleep(1)
+      end
     end
 
     bot.send_message(CHANNEL_ID, 'Started bot!')

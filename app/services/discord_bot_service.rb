@@ -38,9 +38,21 @@ class DiscordBotService
       end
     end
 
+    bot.message do |event|
+      handle_message(event)
+    end
+
     bot.send_message(CHANNEL_ID, 'Started bot!')
 
     bot.run
+  end
+
+  def handle_message(event)
+    user_message = event.message.content
+
+    if user_message.downcase == 'hello'
+      event.respond 'Hello there!'
+    end
   end
 
   def self.send_message(content)

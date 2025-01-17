@@ -7,6 +7,7 @@ class DiscordBotService
   USER_ID=1312259562384003092
 
   def self.run
+    @bot_params = {}
     bot = Discordrb::Commands::CommandBot.new token: BOT_TOKEN, prefix: '!'
     bot.command(:exit, help_available: false) do |event|
       break unless event.user.id == USER_ID
@@ -27,13 +28,20 @@ class DiscordBotService
       DiscordBotComponentService.add_keyword
     end
 
+    bot.command(:keyword, help_available: true) do |event, *args|
+      DiscordBotComponentService.add_keyword
+    end
+
     bot.button(custom_id: 'keyword') do |event|
       event.respond(content: 'You selected keyword, please input keyword "music or restaurant".')
       bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
         keyword = response_event.message.content.strip
-        
+        @bot_params[:keyword] = keyword
         event.channel.send_message("You entered the keyword: #{keyword}")
         events = TicketService.get_events(keyword)
+
+        event.channel.send_message("There are no events for the keyword '#{keyword}'.") if events.count.zero?
+
         index = 0
         loop do
           break if index > events.count - 1
@@ -61,7 +69,7 @@ class DiscordBotService
     user_message = event.message.content
     p user_message.downcase
     if user_message.downcase == 'hello'
-      event.respond 'Hello there!'
+      event.respond 'Hello there, what do you want?'
     end
   end
 

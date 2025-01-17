@@ -20,26 +20,36 @@ class DiscordBotService
     end
 
     bot.command(:test, help_available: true) do |event|
-      bot.send_message(event.channel.id, 'I am ready to getting all tickets.')
+      bot.send_message(event.channel.id, 'I am ready to get all tickets.')
     end
 
-    bot.command(:events, help_available: true) do |event|
-      bot.send_message(event.channel.id, 'I am obtaining the event data from Ticketmaster through their API!!!')
-      events = TicketService.get_events
-      index = 0
-      loop do
-        break if index > events.count - 1
+    bot.command(:events, help_available: true) do |event, *args|
+      DiscordBotComponentService.add_keyword
+    end
 
-        bot.send_message(event.channel.id, events[index])
-        bot.send_message(event.channel.id, '=' * 55)
+    bot.button(custom_id: 'keyword') do |event|
+      event.respond(content: 'You selected keyword, please input keyword "music or restaurant".')
+      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
+        keyword = response_event.message.content.strip
+        
+        event.channel.send_message("You entered the keyword: #{keyword}")
+        events = TicketService.get_events(keyword)
+        index = 0
+        loop do
+          break if index > events.count - 1
 
-        index += 1
-        sleep(1)
+          event.channel.send_message(events[index])
+          event.channel.send_message('=' * 55)
+
+          index += 1
+          sleep(1)
+        end
+        true # Stop listening after handling the response
       end
     end
 
     bot.message do |event|
-      handle_message(event)
+      self.handle_message(event)
     end
 
     bot.send_message(CHANNEL_ID, 'Started bot!')
@@ -47,9 +57,9 @@ class DiscordBotService
     bot.run
   end
 
-  def handle_message(event)
+  def self.handle_message(event)
     user_message = event.message.content
-
+    p user_message.downcase
     if user_message.downcase == 'hello'
       event.respond 'Hello there!'
     end

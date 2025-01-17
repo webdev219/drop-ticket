@@ -1,0 +1,58 @@
+namespace :feed do
+  desc "Download and process the feed file"
+  task download_and_process: :environment do
+    require 'open-uri'
+    require 'zlib'
+    require 'net/http'
+    require 'uri'
+    require 'json'
+    require 'csv'
+    
+    api_key   = Rails.application.credentials.config[:ticket][:key]
+    url       = "https://app.ticketmaster.com/discovery-feed/v2/events?apikey=#{api_key}"
+    uri       = URI.parse(url)
+    feed_data = []
+    response  = Net::HTTP.get_response(uri)
+
+    if response.is_a?(Net::HTTPSuccess)
+      feed_data = JSON.parse(response.body)
+    else
+      puts "Request failed with status: #{response.code} #{response.message}"
+      return
+    end
+
+    return unless feed_data.present?
+
+    countries = feed_data['countries'].keys
+    feed_urls = countries.map{|country| feed_data['countries'][country]['CSV']}
+
+    feed_urls.each do |feed_url|
+      compressed_file = 'tmp/events_raw.csv.gz'
+      decompressed_file = 'tmp/events_raw.csv'
+      uri = feed_url['uri']
+      puts "=======processing #{feed_url['country_code']}=============="
+      # Download the file
+      File.open(compressed_file, 'wb') do |file|
+        file.write(URI.open(uri).read)
+      end
+
+      # Decompress the file
+      Zlib::GzipReader.open(compressed_file) do |gzip_file|
+        File.open(decompressed_file, 'w') do |file|
+          file.write(gzip_file.read)
+        end
+      end
+
+      feed_data = []
+      CSV.foreach(decompressed_file, headers: true) do |row|
+        feed_data << row.to_h.transform_keys(&:downcase)
+        if feed_data.count == 50
+          TicketEvent.upsert_all(feed_data)
+          feed_data = []
+        end
+      end
+      TicketEvent.upsert_all(feed_data)
+    end
+    puts "Feed file downloaded and processed at #{Time.now}"
+  end
+end

@@ -25,7 +25,8 @@ namespace :feed do
 
     countries = feed_data['countries'].keys
     feed_urls = countries.map{|country| feed_data['countries'][country]['CSV']}
-
+    columns = TicketEvent.column_names.dup
+    columns.delete('primary_event_url')
     feed_urls.each do |feed_url|
       compressed_file = 'tmp/events_raw.csv.gz'
       decompressed_file = 'tmp/events_raw.csv'
@@ -46,12 +47,14 @@ namespace :feed do
       feed_data = []
       CSV.foreach(decompressed_file, headers: true) do |row|
         feed_data << row.to_h.transform_keys(&:downcase)
+        unique_data = feed_data.uniq { |item| item[:primary_event_url] }
         if feed_data.count == 50
-          TicketEvent.upsert_all(feed_data)
+          TicketEvent.upsert_all(unique_data, unique_by: :primary_event_url, update_only: columns)
           feed_data = []
         end
       end
-      TicketEvent.upsert_all(feed_data)
+      unique_data = feed_data.uniq { |item| item[:primary_event_url] }
+      TicketEvent.upsert_all(unique_data, unique_by: :primary_event_url, update_only: columns)
     end
     puts "Feed file downloaded and processed at #{Time.now}"
   end

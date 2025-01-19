@@ -3,21 +3,16 @@ class TicketService
   SECRET = Rails.application.credentials.config[:ticket][:secret]
 
   def self.get_events(params)
-    size    = 10
-    source  = 'ticketmaster'
-    query_params = params.map{|k,v| "#{k}=#{v}"}.join("&")
-    url="https://app.ticketmaster.com/discovery/v2/events.json?#{query_params}&size=#{size}&apikey=#{API_KEY}&sort=date,asc&onsaleOnStartDate=#{Date.today.strftime("%Y-%m-%d")}"
-    p '===============', params, url
-    response = Faraday.get(url)
-    response = JSON.parse(response.body)
+    p params
+    tickets = TicketEvent.where(venue_country_code: params[:country_code])
+    tickets = tickets.where("LOWER(classification_genre) LIKE :key OR LOWER(classification_sub_genre) LIKE :key", key: "%#{params[:keyword].downcase}%")
 
-    return [] unless response['_embedded']
-
-    response['_embedded']['events'].map do |event|
+    tickets.map do |ticket|
       <<~EVENT_MESSAGE
-        #{event['name']}
-        #{event['url']}
-        #{event['dates']['start']['localDate'].to_date.strftime("%a • %b %m, %y")} #{event['dates']['start']['localTime'].to_time.strftime("• %-I:%M %p") rescue nil}
+        #{ticket.event_name}
+        #{ticket.primary_event_url}
+        #{ticket.event_start_local_date.strftime("%a • %b %m, %y")} #{ticket.event_start_local_time.strftime("• %-I:%M %p") rescue nil}
+        #{ticket.event_image_url}
       EVENT_MESSAGE
     end
   end

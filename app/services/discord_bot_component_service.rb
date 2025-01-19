@@ -1,11 +1,61 @@
 class DiscordBotComponentService
-  def self.add_keyword(params = {countryCode: 'US', state: 'CA', city: nil, keyword: 'Music'})
-    bot_token = Rails.application.credentials.config[:discord][:token]
-    channel_id = 1328014476993368213
+  def self.add_countries(params)
+    country = {
+      'US' => 'United States',
+      'GB' => 'United Kingdom',
+      'CA' => 'Canada',
+      'FR' => 'France',
+      'DK' => 'Denmark',
+      'DE' => 'Germany',
+      'PL' => 'Poland',
+      'SE' => 'Sweden',
+      'EE' => 'Estonia',
+      'AT' => 'Austria',
+      'FI' => 'Finland',
+      'IT' => 'Italy',
+      'CH' => 'Switzerland',
+      'BE' => 'Belgium',
+      'NL' => 'Netherlands',
+      'ES' => 'Spain',
+      'NO' => 'Norway',
+      'CZ' => 'Czech Republic',
+      'TR' => 'Turkey',
+      'AE' => 'United Arab Emirates',
+      'NZ' => 'New Zealand',
+      'AU' => 'Australia',
+      'MX' => 'Mexico',
+      'ZA' => 'South Africa'
+    }
+    options = country.map do |k, v|
+      {
+        label: v,
+        value: k
+      }
+    end
 
-    uri = URI("https://discord.com/api/v10/channels/#{channel_id}/messages")
+    payload = {
+      content: "Please select country:",
+      components: [
+        {
+          type: 1,
+          components: [
+            {
+                type: 3,
+                custom_id: "country_code",
+                options: options,
+                placeholder: "Choose a country",
+                min_values: 1,
+                max_values: 3
+            }
+          ]
+        }
+      ]
+    }
+    add_components(payload, params[:channel_id])
+    return
+  end
 
-    # Construct the payload
+  def self.add_keyword(params = {country_code: 'US', keyword: 'Music'})
     payload = {
       content: 'Please select button for input value:',
       components: [
@@ -14,21 +64,9 @@ class DiscordBotComponentService
           components: [
             {
               type: 2,
-              label: "Country: #{params[:countryCode]}",
+              label: "Country: #{params[:country_code].join(",")}",
               style: 1,
               custom_id: 'country'
-            },
-            {
-              type: 2,
-              label: "State: #{params[:state]}",
-              style: 2,
-              custom_id: 'state'
-            },
-            {
-              type: 2,
-              label: "City: #{params[:city]}",
-              style: 2,
-              custom_id: 'city'
             },
             {
               type: 2,
@@ -46,7 +84,13 @@ class DiscordBotComponentService
         }
       ]
     }
-    http = Net::HTTP.new(uri.host, uri.port)
+    add_components(payload, params[:channel_id])
+  end
+
+  def self.add_components(payload, channel_id)
+    bot_token = Rails.application.credentials.config[:discord][:token]
+    uri       = URI("https://discord.com/api/v10/channels/#{channel_id}/messages")
+    http      = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     request = Net::HTTP::Post.new(uri.path, {
       'Content-Type' => 'application/json',
@@ -55,7 +99,6 @@ class DiscordBotComponentService
     request.body = payload.to_json
 
     # Send the request
-    response = http.request(request)
-    return
+    http.request(request)
   end
 end

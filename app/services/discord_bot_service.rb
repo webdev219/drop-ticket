@@ -7,7 +7,7 @@ class DiscordBotService
   USER_ID=1312259562384003092
 
   def self.run
-    @bot_params = {countryCode: 'US', state: 'CA', city: nil, keyword: 'Music'}
+    @bot_params = {country_code: 'US', state: 'CA', city: nil, keyword: 'Music'}
     bot = Discordrb::Commands::CommandBot.new token: BOT_TOKEN, prefix: '!'
     bot.command(:exit, help_available: false) do |event|
       break unless event.user.id == USER_ID
@@ -25,42 +25,25 @@ class DiscordBotService
     end
 
     bot.command(:events, help_available: true) do |event, *args|
-      DiscordBotComponentService.add_keyword
+      @bot_params[:channel_id] = event.channel.id
+      DiscordBotComponentService.add_countries(@bot_params)
     end
 
     bot.command(:keyword, help_available: true) do |event, *args|
-      DiscordBotComponentService.add_keyword
+      @bot_params[:channel_id] = event.channel.id
+      DiscordBotComponentService.add_keyword(@bot_params)
     end
 
-    bot.button(custom_id: 'country') do |event|
-      event.respond(content: 'You selected country, please input country code "US or GB, FR etc..".')
-      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
-        @bot_params[:countryCode] = response_event.message.content.strip
-        DiscordBotComponentService.add_keyword(@bot_params)
-        true
-      end
+    bot.select_menu(custom_id: 'country_code') do |event|
+      event.respond(content: 'You selected country')
+      @bot_params[:channel_id] = event.channel.id
+      @bot_params[:country_code] = event.values
+      DiscordBotComponentService.add_keyword(@bot_params)
     end
-
-    bot.button(custom_id: 'state') do |event|
-      event.respond(content: 'You selected state, please input state code "CA or NY".')
-      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
-        @bot_params[:state] = response_event.message.content.strip
-        DiscordBotComponentService.add_keyword(@bot_params)
-        true
-      end
-    end
-
-    bot.button(custom_id: 'city') do |event|
-      event.respond(content: 'You selected city, please input city.')
-      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
-        @bot_params[:city] = response_event.message.content.strip
-        DiscordBotComponentService.add_keyword(@bot_params)
-        true
-      end
-    end
-
+    
     bot.button(custom_id: 'keyword') do |event|
-      event.respond(content: 'You selected keyword, please input keyword "music or restaurant".')
+      event.respond(content: 'You selected keyword')
+      @bot_params[:channel_id] = event.channel.id
       bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
         keyword = response_event.message.content.strip
         @bot_params[:keyword] = keyword

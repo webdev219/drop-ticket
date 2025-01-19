@@ -12,7 +12,6 @@ class TicketService
         #{ticket.event_name}
         #{ticket.primary_event_url}
         #{ticket.event_start_local_date.strftime("%a • %b %m, %y")} #{ticket.event_start_local_time.strftime("• %-I:%M %p") rescue nil}
-        #{ticket.event_image_url}
       EVENT_MESSAGE
     end
   end

@@ -7,7 +7,8 @@ class DiscordBotService
   USER_ID=1312259562384003092
 
   def self.run
-    @bot_params = {country_code: 'US', state: 'CA', city: nil, keyword: 'Music'}
+    @default_params = {country_code: 'US', state: 'CA', city: nil, keyword: 'Music'}
+    @bot_params = {}
     bot = Discordrb::Commands::CommandBot.new token: BOT_TOKEN, prefix: '!'
     bot.command(:exit, help_available: false) do |event|
       break unless event.user.id == USER_ID
@@ -25,29 +26,45 @@ class DiscordBotService
     end
 
     bot.command(:events, help_available: true) do |event, *args|
-      @bot_params[:channel_id] = event.channel.id
-      DiscordBotComponentService.add_countries(@bot_params)
+      params = @bot_params[event.user.id] || @default_params.dup
+      params[:channel_id] = event.channel.id
+      @bot_params[event.user.id] = params
+      DiscordBotComponentService.add_countries(params)
     end
 
     bot.command(:keyword, help_available: true) do |event, *args|
-      @bot_params[:channel_id] = event.channel.id
-      DiscordBotComponentService.add_keyword(@bot_params)
+      params = @bot_params[event.user.id] || @default_params.dup
+      params[:channel_id] = event.channel.id
+      @bot_params[event.user.id] = params
+      DiscordBotComponentService.add_keyword(params)
+    end
+
+    bot.button(custom_id: 'country') do |event|
+      event.respond(content: 'You selected country')
+      params = @bot_params[event.user.id] || @default_params.dup
+      params[:channel_id] = event.channel.id
+      @bot_params[event.user.id] = params
+      DiscordBotComponentService.add_countries(params)
     end
 
     bot.select_menu(custom_id: 'country_code') do |event|
       event.respond(content: 'You selected country')
-      @bot_params[:channel_id] = event.channel.id
-      @bot_params[:country_code] = event.values
-      DiscordBotComponentService.add_keyword(@bot_params)
+      params = @bot_params[event.user.id] || @default_params.dup
+      params[:channel_id] = event.channel.id
+      params[:country_code] = event.values
+      @bot_params[event.user.id] = params
+      DiscordBotComponentService.add_keyword(params)
     end
     
     bot.button(custom_id: 'keyword') do |event|
       event.respond(content: 'You selected keyword')
-      @bot_params[:channel_id] = event.channel.id
-      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
+      params = @bot_params[event.user.id] || @default_params.dup
+      params[:channel_id] = event.channel.id
+      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 30) do |response_event|
         keyword = response_event.message.content.strip
-        @bot_params[:keyword] = keyword
-        DiscordBotComponentService.add_keyword(@bot_params)
+        params[:keyword] = keyword
+        @bot_params[event.user.id] = params
+        DiscordBotComponentService.add_keyword(params)
         true
       end
     end
@@ -55,7 +72,7 @@ class DiscordBotService
 
     bot.button(custom_id: 'search') do |event|
       event.respond(content: 'Looking for tickets!')
-      events = TicketService.get_events(@bot_params)
+      events = TicketService.get_events(@bot_params[event.user.id])
 
       event.channel.send_message("There are no events for the keyword '#{@bot_params}'.") if events.count.zero?
 

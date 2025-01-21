@@ -62,7 +62,7 @@ class DiscordBotService
     bot.button(custom_id: 'monitor') do |event|
       event.respond(content: 'Monitoring for event tickets!')
       option = UserOption.find_or_create_by(discord_id: event.user.id)
-      option.update(options: @bot_params[event.user.id], sent_at: Time.zone.now)
+      option.update(options: @bot_params[event.user.id], sent_at: Time.zone.now-2.hours)
       self.send_event_message(option)
     end
 
@@ -100,7 +100,6 @@ class DiscordBotService
           Event Time: #{ticket.event_start_local_date.strftime("%a • %b %m, %y")} #{ticket.event_start_local_time.strftime("• %-I:%M %p") rescue nil}
         EVENT_MESSAGE
       user.dm(message)
-      user.dm('=*=' * 25)
       index += 1
       sleep(1)
     end

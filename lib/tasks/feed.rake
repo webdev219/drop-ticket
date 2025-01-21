@@ -31,9 +31,9 @@ namespace :feed do
       compressed_file = 'tmp/events_raw.csv.gz'
       decompressed_file = 'tmp/events_raw.csv'
       uri = feed_url['uri']
-      puts "=======processing #{feed_url['country_code']}=============="
       
       next if feed_url['country_code'] != 'US'
+      puts "=======processing #{feed_url['country_code']}=============="
       
       File.open(compressed_file, 'wb') do |file|
         file.write(URI.open(uri).read)

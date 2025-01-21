@@ -85,6 +85,7 @@ class DiscordBotComponentService
       ]
     }
     add_components(payload, params[:channel_id])
+    return
   end
 
   def self.add_components(payload, channel_id)

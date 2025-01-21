@@ -7,7 +7,7 @@ class DiscordBotService
   USER_ID=1312259562384003092
 
   def self.run
-    @default_params = {country_code: 'US', state: 'CA', city: nil, keyword: 'Music'}
+    @default_params = {country_code: ['US'], state: 'CA', city: nil, keyword: 'Music'}
     @bot_params = {}
     bot = Discordrb::Commands::CommandBot.new token: BOT_TOKEN, prefix: '!'
     bot.command(:exit, help_available: false) do |event|
@@ -73,14 +73,22 @@ class DiscordBotService
     bot.button(custom_id: 'search') do |event|
       event.respond(content: 'Looking for tickets!')
       events = TicketService.get_events(@bot_params[event.user.id])
-
       event.channel.send_message("There are no events for the keyword '#{@bot_params}'.") if events.count.zero?
 
+      price = ->(ticket) { ticket.min_price == ticket.max_price ? "$#{ticket.max_price}" : "$#{ticket.min_price} ~ $#{ticket.max_price}" }
       index = 0
       loop do
         break if index > events.count - 1
-
-        event.channel.send_message(events[index])
+        ticket = events[index]
+        message = 
+          <<~EVENT_MESSAGE
+            Name: #{ticket.event_name}
+            Price: #{price.call(ticket) if ticket.min_price.present?}
+            Event URL:#{ticket.primary_event_url}
+            Event Time: #{ticket.event_start_local_date.strftime("%a • %b %m, %y")} #{ticket.event_start_local_time.strftime("• %-I:%M %p") rescue nil}
+          EVENT_MESSAGE
+        event.channel.send_message(message)
+        # event.channel.send_file(ticket.event_image_url) if ticket.event_image_url
         event.channel.send_message('=' * 55)
 
         index += 1

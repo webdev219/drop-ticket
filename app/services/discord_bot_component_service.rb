@@ -70,15 +70,15 @@ class DiscordBotComponentService
             },
             {
               type: 2,
-              label: "Keyword: #{params[:keyword]}",
+              label: "Keyword: #{params[:keyword].join(", ")}",
               style: 1,
               custom_id: 'keyword'
             },
             {
               type: 2,
-              label: 'Search',
+              label: 'Start Monitor',
               style: 3,
-              custom_id: 'search'
+              custom_id: 'monitor'
             }
           ]
         }

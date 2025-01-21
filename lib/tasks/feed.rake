@@ -32,7 +32,9 @@ namespace :feed do
       decompressed_file = 'tmp/events_raw.csv'
       uri = feed_url['uri']
       puts "=======processing #{feed_url['country_code']}=============="
-      # Download the file
+      
+      next if feed_url['country_code'] != 'US'
+      
       File.open(compressed_file, 'wb') do |file|
         file.write(URI.open(uri).read)
       end
@@ -55,6 +57,10 @@ namespace :feed do
       end
       unique_data = feed_data.uniq { |item| item[:primary_event_url] }
       TicketEvent.upsert_all(unique_data, unique_by: :primary_event_url, update_only: columns)
+    end
+    UserOption.where(monitor: true).each do |option|
+      DiscordBotService.send_event_message(option)
+      option.update(sent_at: Time.zone.now)
     end
     puts "Feed file downloaded and processed at #{Time.now}"
   end

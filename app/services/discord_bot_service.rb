@@ -7,7 +7,7 @@ class DiscordBotService
   USER_ID=1312259562384003092
 
   def self.run
-    @default_params = {country_code: ['US'], state: 'CA', city: nil, keyword: 'Music'}
+    @default_params = {country_code: ['US'], state: 'CA', city: nil, keyword: ['Music']}
     @bot_params = {}
     bot = Discordrb::Commands::CommandBot.new token: BOT_TOKEN, prefix: '!'
     bot.command(:exit, help_available: false) do |event|
@@ -17,26 +17,16 @@ class DiscordBotService
       exit
     end
 
-    bot.command(:hi, help_available: true) do |event|
-      bot.send_message(event.channel.id, 'Hi, I am a bot for getting all tickets')
-    end
-
-    bot.command(:test, help_available: true) do |event|
-      bot.send_message(event.channel.id, 'I am ready to get all tickets.')
-    end
-
-    bot.command(:events, help_available: true) do |event, *args|
+    bot.command(:monitor, help_available: true) do |event, *args|
       params = @bot_params[event.user.id] || @default_params.dup
       params[:channel_id] = event.channel.id
       @bot_params[event.user.id] = params
       DiscordBotComponentService.add_countries(params)
     end
-
-    bot.command(:keyword, help_available: true) do |event, *args|
-      params = @bot_params[event.user.id] || @default_params.dup
-      params[:channel_id] = event.channel.id
-      @bot_params[event.user.id] = params
-      DiscordBotComponentService.add_keyword(params)
+    
+    bot.command(:stop, help_available: true) do |event|
+      UserOption.find_by(discord_id: event.user.id).update(monitor: false)
+      bot.send_message(event.channel.id, 'Stop the monitoring of ticket events.')
     end
 
     bot.button(custom_id: 'country') do |event|
@@ -60,8 +50,8 @@ class DiscordBotService
       event.respond(content: 'You selected keyword')
       params = @bot_params[event.user.id] || @default_params.dup
       params[:channel_id] = event.channel.id
-      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 30) do |response_event|
-        keyword = response_event.message.content.strip
+      bot.add_await!(Discordrb::Events::MessageEvent, timeout: 60) do |response_event|
+        keyword = response_event.message.content.strip.split(" ")
         params[:keyword] = keyword
         @bot_params[event.user.id] = params
         DiscordBotComponentService.add_keyword(params)
@@ -69,31 +59,11 @@ class DiscordBotService
       end
     end
 
-
-    bot.button(custom_id: 'search') do |event|
-      event.respond(content: 'Looking for tickets!')
-      events = TicketService.get_events(@bot_params[event.user.id])
-      event.channel.send_message("There are no events for the keyword '#{@bot_params}'.") if events.count.zero?
-
-      price = ->(ticket) { ticket.min_price == ticket.max_price ? "$#{ticket.max_price}" : "$#{ticket.min_price} ~ $#{ticket.max_price}" }
-      index = 0
-      loop do
-        break if index > events.count - 1
-        ticket = events[index]
-        message = 
-          <<~EVENT_MESSAGE
-            Name: #{ticket.event_name}
-            Price: #{price.call(ticket) if ticket.min_price.present?}
-            Event URL:#{ticket.primary_event_url}
-            Event Time: #{ticket.event_start_local_date.strftime("%a • %b %m, %y")} #{ticket.event_start_local_time.strftime("• %-I:%M %p") rescue nil}
-          EVENT_MESSAGE
-        event.channel.send_message(message)
-        # event.channel.send_file(ticket.event_image_url) if ticket.event_image_url
-        event.channel.send_message('=' * 55)
-
-        index += 1
-        sleep(1)
-      end
+    bot.button(custom_id: 'monitor') do |event|
+      event.respond(content: 'Monitoring for event tickets!')
+      option = UserOption.find_or_create_by(discord_id: event.user.id)
+      option.update(options: @bot_params[event.user.id], sent_at: Time.zone.now)
+      self.send_event_message(option)
     end
 
     bot.message do |event|
@@ -107,15 +77,32 @@ class DiscordBotService
 
   def self.handle_message(event)
     user_message = event.message.content
-    p user_message.downcase
     if user_message.downcase == 'hello'
       event.respond 'Hello there, what do you want?'
     end
   end
 
-  def self.send_message(content)
-    bot = Discordrb::Bot.new token: BOT_TOKEN
-    channel = bot.channel(CHANNEL_ID.to_i)
-    channel.send_message(content)
+  def self.send_event_message(option)
+    bot    = Discordrb::Bot.new token: BOT_TOKEN
+    user   = bot.user(option.discord_id)
+    
+    events = TicketService.get_events(option.event_params)
+    price  = ->(ticket) { ticket.min_price == ticket.max_price ? "$#{ticket.max_price}" : "$#{ticket.min_price} ~ $#{ticket.max_price}" }
+    index  = 0
+    loop do
+      break if index > events.count - 1
+      ticket = events[index]
+      message = 
+        <<~EVENT_MESSAGE
+          Name: #{ticket.event_name}
+          Price: #{price.call(ticket) if ticket.min_price.present?}
+          Event URL:#{ticket.primary_event_url}
+          Event Time: #{ticket.event_start_local_date.strftime("%a • %b %m, %y")} #{ticket.event_start_local_time.strftime("• %-I:%M %p") rescue nil}
+        EVENT_MESSAGE
+      user.dm(message)
+      user.dm('=*=' * 25)
+      index += 1
+      sleep(1)
+    end
   end
 end

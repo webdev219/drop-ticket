@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_01_18_101911) do
+ActiveRecord::Schema[8.0].define(version: 2025_01_21_100844) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -94,6 +94,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_01_18_101911) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["primary_event_url"], name: "index_ticket_events_on_primary_event_url", unique: true
+  end
+
+  create_table "user_options", force: :cascade do |t|
+    t.string "discord_id"
+    t.json "options", default: {}
+    t.boolean "monitor", default: true
+    t.datetime "sent_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["discord_id"], name: "index_user_options_on_discord_id", unique: true
   end
 
   create_table "users", force: :cascade do |t|

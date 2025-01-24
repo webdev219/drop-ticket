@@ -46,6 +46,7 @@ namespace :feed do
         end
       end
 
+      # Parse csv file
       feed_data = []
       CSV.foreach(decompressed_file, headers: true) do |row|
         feed_data << row.to_h.transform_keys(&:downcase)

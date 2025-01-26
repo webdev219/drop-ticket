@@ -12,4 +12,7 @@ class TicketService
     tickets = tickets.where(conditions, *values).limit(10)
     tickets
   end
+
+  def self.get_tickets(params)
+  end
 end

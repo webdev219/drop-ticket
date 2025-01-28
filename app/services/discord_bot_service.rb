@@ -77,7 +77,7 @@ class DiscordBotService
 
   def self.handle_message(event)
     user_message = event.message.content
-    if user_message.downcase == 'hello'
+    if %w[hi hello].include? user_message.downcase
       event.respond 'Hello there, what do you want?'
     end
   end

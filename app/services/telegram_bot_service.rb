@@ -10,13 +10,6 @@ class TelegramBotService
       bot.send_message(event.channel.id, 'Bot is shutting down')
       exit
     end
-
-    bot.command(:monitor, help_available: true) do |event, *args|
-      params = @bot_params[event.user.id] || @default_params.dup
-      params[:channel_id] = event.channel.id
-      @bot_params[event.user.id] = params
-      DiscordBotComponentService.add_countries(params)
-    end
     
     bot.command(:stop, help_available: true) do |event|
       UserOption.find_by(discord_id: event.user.id).update(monitor: false)

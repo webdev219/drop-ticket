@@ -10,11 +10,6 @@ class TelegramBotService
       bot.send_message(event.channel.id, 'Bot is shutting down')
       exit
     end
-    
-    bot.command(:stop, help_available: true) do |event|
-      UserOption.find_by(discord_id: event.user.id).update(monitor: false)
-      bot.send_message(event.channel.id, 'Stop the monitoring of ticket events.')
-    end
 
     bot.button(custom_id: 'country') do |event|
       event.respond(content: 'You selected country')

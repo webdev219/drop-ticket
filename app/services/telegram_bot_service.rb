@@ -11,14 +11,6 @@ class TelegramBotService
       exit
     end
 
-    bot.button(custom_id: 'country') do |event|
-      event.respond(content: 'You selected country')
-      params = @bot_params[event.user.id] || @default_params.dup
-      params[:channel_id] = event.channel.id
-      @bot_params[event.user.id] = params
-      DiscordBotComponentService.add_countries(params)
-    end
-
     bot.select_menu(custom_id: 'country_code') do |event|
       event.respond(content: 'You selected country')
       params = @bot_params[event.user.id] || @default_params.dup
